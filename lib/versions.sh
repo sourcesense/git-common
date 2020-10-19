@@ -44,7 +44,7 @@ project_version() {
     fi
     if [ -f "$vFileAngularPath" ]; then
         vFiles="$vFiles'$vFileAngular'"
-        version=$(jq '.version'<"$vFileAngularPath")
+        version=$(jq -r '.version'<"$vFileAngularPath")
         ((count++))
     fi
     if [ -f "$vFileHelmPath" ]; then

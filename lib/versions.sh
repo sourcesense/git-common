@@ -120,55 +120,64 @@ get_patch_number() {
 }
 
 check_version() {
-    local baseDir=${1:-.}
-    local version
-    version=$(project_version "$baseDir")
-    local branch
+    baseDir=${1:-.}
+    version=$(project_version "$baseDir") || exit 1
+    baseVersion="$version"
     branch=$(git_branch "$baseDir")
 
-    local snapshotSuffix="-SNAPSHOT"
-    local rcKey="-rc"
+    unset isSnapshot
+    if [[ $version == *"-SNAPSHOT" ]]; then
+        isSnapshot=true
+        baseVersion=${version%%"-SNAPSHOT"}
+    fi
+    log "isSnapshot:${isSnapshot:-false}"
+    unset isRC
+    if [[ $baseVersion =~ .*-rc[1-9]?[0-9]* ]]; then
+        isRC=true
+        baseVersion=${baseVersion%%"-rc"*}
+    fi
+    log "isRC:${isRC:-false}"
+
+    log "baseVersion:$baseVersion"
+    patchNumber=$(get_patch_number "$baseVersion")
+    log "patchNumber:$patchNumber"
+    log "checking version $version in branch $branch"
+
+    check_tag() {
+        if git_tag_exists "$baseDir" "$version" ; then
+            whine "tag $version already found"
+        fi
+    }
 
     check_master() {
-        local baseDir=$1
-        local version=$2
-        case "$version" in
-            *$snapshotSuffix)
-                whine "SNAPSHOT version not allowed in master branch"
-                ;;
-            *$rcKey*)
-                whine "rc version not allowed in master branch"
-                ;;
-            *)
-                if tag_exists "$baseDir" "$version" ; then
-                    whine "tag $version already found"
-                fi
-                ;;
-        esac
+        [[ -z $isSnapshot ]] || whine "SNAPSHOT version not allowed"
+        [[ -z $isRC ]] || whine "rc version not allowed"
+        check_tag
     }
 
     check_develop() {
-        case "$1" in
-            *$snapshotSuffix)
-                strippedSnapshot=${1%%$snapshotSuffix}
-                patchNumber=$(get_patch_number "$strippedSnapshot")
-                if [[ $patchNumber != 0 ]] ; then
-                    whine "non-zero patch version not allowed in develop/feature branch"
-                fi
-                ;;
-            *)
-                whine "non SNAPSHOT version not allowed in develop/feature branch"
-                ;;
-        esac
+        [[ -n $isSnapshot ]] || whine "non SNAPSHOT version not allowed"
+        [[ -z $isRC ]] || whine "rc version not allowed"
+        [[ $patchNumber == 0 ]] || whine "non-zero patch version not allowed"
     }
 
-    log "checking version $version in branch $branch"
+    check_release() {
+        [[ -n $isRC ]] || whine "non rc version not allowed"
+        [[ $patchNumber == 0 ]] || whine "non-zero patch version not allowed"
+        if [[ -z $isSnapshot ]] ; then
+            check_tag
+        fi
+    }
+
     case "$branch" in
-        "master")
-            check_master "$baseDir" "$version"
+        "master" | "main")
+            check_master
             ;;
         "develop" | "feature/"*)
-            check_develop "$version"
+            check_develop
+            ;;
+        "release/"*)
+            check_release
             ;;
         *)
             whine "unsupported branch $branch"

@@ -122,26 +122,21 @@ get_patch_number() {
 check_version() {
     baseDir=${1:-.}
     version=$(project_version "$baseDir") || exit 1
-    baseVersion="$version"
+    baseVersion=${version%%-*}
     branch=$(git_branch "$baseDir")
 
     unset isSnapshot
     if [[ $version == *"-SNAPSHOT" ]]; then
         isSnapshot=true
-        baseVersion=${version%%"-SNAPSHOT"}
     fi
-    log "isSnapshot:${isSnapshot:-false}"
     unset isRC
     if [[ $baseVersion =~ .*-rc[1-9]?[0-9]* ]]; then
         isRC=true
-        baseVersion=${baseVersion%%"-rc"*}
     fi
-    log "isRC:${isRC:-false}"
 
-    log "baseVersion:$baseVersion"
+    baseVersion=${baseVersion%%-*}
     patchNumber=$(get_patch_number "$baseVersion")
-    log "patchNumber:$patchNumber"
-    log "checking version $version in branch $branch"
+    log "checking version $version (baseVersion:$baseVersion, isSnapshot:${isSnapshot:-false}, isRC:${isRC:-false}, patchNumber:$patchNumber) in branch $branch"
 
     check_tag() {
         if git_tag_exists "$baseDir" "$version" ; then

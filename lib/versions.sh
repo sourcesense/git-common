@@ -130,7 +130,7 @@ check_version() {
         isSnapshot=true
     fi
     unset isRC
-    if [[ $baseVersion =~ .*-rc[1-9]?[0-9]* ]]; then
+    if [[ $version =~ .*-rc[1-9]?[0-9]*(-SNAPSHOT)? ]]; then
         isRC=true
     fi
 

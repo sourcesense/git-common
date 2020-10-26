@@ -130,11 +130,10 @@ check_version() {
         isSnapshot=true
     fi
     unset isRC
-    if [[ $baseVersion =~ .*-rc[1-9]?[0-9]* ]]; then
+    if [[ $version =~ .*-rc[1-9]?[0-9]*(-SNAPSHOT)? ]]; then
         isRC=true
     fi
 
-    baseVersion=${baseVersion%%-*}
     patchNumber=$(get_patch_number "$baseVersion")
     log "checking version $version (baseVersion:$baseVersion, isSnapshot:${isSnapshot:-false}, isRC:${isRC:-false}, patchNumber:$patchNumber) in branch $branch"
 

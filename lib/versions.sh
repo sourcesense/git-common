@@ -163,6 +163,14 @@ check_version() {
         fi
     }
 
+    check_hotfix() {
+        [[ -n $isRC ]] || whine "non rc version not allowed"
+        [[ $patchNumber != 0 ]] || whine "zero patch version not allowed"
+        if [[ -z $isSnapshot ]] ; then
+            check_tag
+        fi
+    }
+
     case "$branch" in
         "master" | "main")
             check_master
@@ -172,6 +180,9 @@ check_version() {
             ;;
         "release/"*)
             check_release
+            ;;
+        "hotfix/"*)
+            check_hotfix
             ;;
         *)
             whine "unsupported branch $branch"

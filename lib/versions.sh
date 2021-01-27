@@ -49,7 +49,7 @@ project_version() {
     fi
     if [ -f "$vFileHelmPath" ]; then
         vFiles="$vFiles'$vFileHelm'"
-        version=$(yq r - "version"<"$vFileHelmPath")
+        version=$(yq e '.version' "$vFileHelmPath")
         ((count++))
     fi
     if [ "$count" = 0 ]; then

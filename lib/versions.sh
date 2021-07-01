@@ -13,7 +13,8 @@ project_version() {
     local vFileMaven="pom.xml"
     local vFileGradle="app/versions.gradle"
     local vFileAngular="package.json"
-    local vFileHelm="chart/Chart.yaml"
+    local vFileHelm="Chart.yaml"
+    local vFileAltHelm="chart/Chart.yaml"
 
     local baseDir=${1:-.}
     log "searching version file in path: $baseDir"
@@ -23,6 +24,7 @@ project_version() {
     local vFileGradlePath="$baseDir/$vFileGradle"
     local vFileAngularPath="$baseDir/$vFileAngular"
     local vFileHelmPath="$baseDir/$vFileHelm"
+    local vFileAltHelmPath="$baseDir/$vFileAltHelm"
 
     local vFiles=""
     local version=""
@@ -52,6 +54,11 @@ project_version() {
         version=$(yq e '.version' "$vFileHelmPath")
         ((count++))
     fi
+    if [ -f "$vFileAltHelmPath" ]; then
+        vFiles="$vFiles'$vFileAltHelm'"
+        version=$(yq e '.version' "$vFileAltHelmPath")
+        ((count++))
+    fi
     if [ "$count" = 0 ]; then
         whine "no version file found"
     elif [ "$count" -gt 1 ]; then
@@ -64,7 +71,7 @@ project_version() {
 add_version_qualifier() {
     local version="$1"
     local qualifier="$2"
-    if [[ "$version" = *"-SNAPSHOT" ]] ; then 
+    if [[ "$version" = *"-SNAPSHOT" ]] ; then
         baseVersion=${version%-SNAPSHOT}
         echo "$baseVersion-$qualifier-SNAPSHOT"
     else
@@ -75,7 +82,7 @@ add_version_qualifier() {
 add_snapshot_id() {
     local version="$1"
     local baseDir=${2:-.}
-    if [[ "$version" = *"-SNAPSHOT" ]] ; then 
+    if [[ "$version" = *"-SNAPSHOT" ]] ; then
         commitId=$(git_commit)
         echo "$version-$commitId"
     else
@@ -197,11 +204,11 @@ create_version_tag() {
     version=$(project_version "$baseDir")
     (
         cd "$baseDir" || exit 1
-        if [ -z "$(git status --porcelain)" ]; then 
+        if [ -z "$(git status --porcelain)" ]; then
             git tag "$version"
             log "added tag: $version"
         else
             whine "uncommitted changes found"
         fi
-    )    
+    )
 }
